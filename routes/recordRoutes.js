@@ -2,6 +2,7 @@ const express = require('express');
 const { create, list, getById, update, deleteRecord } = require('../controllers/recordController');
 const { authenticate, authorize } = require('../middlewares/auth');
 const { validate, schemas } = require('../middlewares/validation');
+const { validateQuery, recordListQuerySchema } = require('../middlewares/queryValidation');
 
 const router = express.Router();
 router.use(authenticate); // all routes require auth
@@ -10,6 +11,7 @@ router.post('/', authorize('analyst', 'admin'), validate(schemas.createRecord), 
 router.get('/', authorize('viewer', 'analyst', 'admin'), list);
 router.get('/:id', authorize('viewer', 'analyst', 'admin'), getById);
 router.put('/:id', authorize('analyst', 'admin'), validate(schemas.updateRecord), update);
-router.delete('/:id', authorize('admin'), deleteRecord); // admin only
+router.delete('/:id', authorize('admin'), deleteRecord);
+router.get('/', authenticate, authorize('viewer', 'analyst', 'admin'), validateQuery(recordListQuerySchema), list);
 
 module.exports = router;
