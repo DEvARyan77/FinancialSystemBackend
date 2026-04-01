@@ -1,22 +1,35 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 
-exports.listUsers = (req, res) => {
-  const users = User.findAll();
-  res.json(users);
+exports.listUsers = async (req, res) => {
+  try {
+    const users = await User.findAll();
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 exports.updateUser = async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
-  if (updates.password) {
-    updates.password = await bcrypt.hash(updates.password, 10);
+  try {
+    if (updates.password) {
+      updates.password = await bcrypt.hash(updates.password, 10);
+    }
+    const updated = await User.update(id, updates);
+    if (!updated) return res.status(404).json({ error: 'User not found' });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-  User.update(id, updates);
-  res.json(User.findById(id));
 };
 
-exports.deleteUser = (req, res) => {
-  User.delete(req.params.id);
-  res.status(204).send();
+exports.deleteUser = async (req, res) => {
+  try {
+    await User.delete(req.params.id);
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };

@@ -15,7 +15,7 @@ const recordListQuerySchema = Joi.object({
   to: Joi.date().iso().optional(),
   limit: Joi.number().integer().min(1).max(1000).default(100),
   offset: Joi.number().integer().min(0).default(0),
-  all: Joi.string().valid('true', 'false').optional() // admin only, validated separately
+  all: Joi.string().valid('true', 'false').optional()
 });
 
 module.exports = { validateQuery, recordListQuerySchema };

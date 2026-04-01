@@ -1,8 +1,6 @@
 const request = require('supertest');
 const app = require('../server');
-const { cleanup } = require('./setup');
-const db = require('../config/db');
-const bcrypt = require('bcryptjs');
+const { createTables, seedData, cleanup } = require('./setup');
 
 describe('Finance Backend API Tests', () => {
   let adminToken;
@@ -12,39 +10,18 @@ describe('Finance Backend API Tests', () => {
   let analystUser;
   let viewerUser;
 
-  beforeAll(() => {
-    // Clear existing data (just to be safe)
-    db.exec('DELETE FROM financial_records');
-    db.exec('DELETE FROM users');
-
-    // Create users with different roles
-    const createUser = (name, email, role, password = 'test123') => {
-      const hashed = bcrypt.hashSync(password, 10);
-      const stmt = db.prepare(`
-        INSERT INTO users (name, email, password, role, status)
-        VALUES (?, ?, ?, ?, ?)
-      `);
-      const info = stmt.run(name, email, hashed, role, 'active');
-      return info.lastInsertRowid;
-    };
-
-    adminUser = createUser('Admin', 'admin@test.com', 'admin');
-    analystUser = createUser('Analyst', 'analyst@test.com', 'analyst');
-    viewerUser = createUser('Viewer', 'viewer@test.com', 'viewer');
-
-    // Create some financial records for the analyst
-    const insertRecord = db.prepare(`
-      INSERT INTO financial_records (amount, type, category, date, description, user_id)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-    insertRecord.run(1000, 'income', 'salary', '2026-04-01', 'Analyst income', analystUser);
-    insertRecord.run(500, 'expense', 'rent', '2026-04-01', 'Analyst expense', analystUser);
-    insertRecord.run(200, 'expense', 'groceries', '2026-04-02', 'Analyst groceries', analystUser);
-    insertRecord.run(3000, 'income', 'bonus', '2026-03-15', 'Analyst bonus', analystUser);
+  beforeAll(async () => {
+    // Ensure tables exist in test database
+    await createTables();
+    // Seed data
+    const users = await seedData();
+    adminUser = users.admin;
+    analystUser = users.analyst;
+    viewerUser = users.viewer;
   });
 
   beforeAll(async () => {
-    // Login to obtain tokens
+    // Obtain tokens via login
     const loginAdmin = await request(app)
       .post('/api/v1/auth/login')
       .send({ email: 'admin@test.com', password: 'test123' });
@@ -61,10 +38,8 @@ describe('Finance Backend API Tests', () => {
     viewerToken = loginViewer.body.token;
   });
 
-  afterAll(() => {
-    // Close database connection to allow Jest to exit
-    db.close();
-    cleanup();
+  afterAll(async () => {
+    await cleanup();
   });
 
   describe('Authentication', () => {
@@ -88,7 +63,7 @@ describe('Finance Backend API Tests', () => {
         .send({
           name: 'Duplicate',
           email: 'admin@test.com',
-          password: 'test123'  // was 'pass' – now valid length
+          password: 'test123'
         });
       expect(res.statusCode).toBe(400);
       expect(res.body.error).toMatch(/Email already exists/i);
@@ -116,8 +91,8 @@ describe('Finance Backend API Tests', () => {
         .get('/api/v1/dashboard/summary')
         .set('Authorization', `Bearer ${analystToken}`);
       expect(res.statusCode).toBe(200);
-      expect(res.body.totalIncome).toBe(4000); // 1000 + 3000
-      expect(res.body.totalExpenses).toBe(700); // 500 + 200
+      expect(res.body.totalIncome).toBe(4000);
+      expect(res.body.totalExpenses).toBe(700);
       expect(res.body.netBalance).toBe(3300);
     });
 
@@ -247,7 +222,6 @@ describe('Finance Backend API Tests', () => {
     });
 
     it('should allow admin to update a user', async () => {
-      // Get viewer user id
       const users = await request(app)
         .get('/api/v1/users')
         .set('Authorization', `Bearer ${adminToken}`);

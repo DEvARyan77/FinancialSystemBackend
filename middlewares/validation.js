@@ -32,8 +32,7 @@ const schemas = {
     category: Joi.string(),
     date: Joi.date().iso(),
     description: Joi.string()
-  }).min(1),
-  // ... other schemas for user update etc.
+  }).min(1)
 };
 
 module.exports = { validate, schemas };
