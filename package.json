@@ -21,7 +21,9 @@
     "ioredis": "^5.10.1",
     "joi": "^18.1.2",
     "jsonwebtoken": "^9.0.3",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "cross-env": "^10.1.0",

@@ -1,0 +1,208 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Finance API",
+    "version": "1.0.0",
+    "description": "API documentation for the Finance Data Processing App"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000/api/v1",
+      "description": "Local Development Server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "summary": "Register",
+        "description": "Register a new user",
+        "security": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string" },
+                  "name": { "type": "string" },
+                  "password": { "type": "string" },
+                  "role": { "type": "string", "example": "viewer/analyst/admin" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Success" } }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Login",
+        "description": "Log in and receive JWT token",
+        "security": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Success" } }
+      }
+    },
+    "/dashboard/summary": {
+      "get": {
+        "summary": "Total Record Summary",
+        "description": "Total income, expenses, net balance",
+        "responses": { "200": { "description": "Success" } }
+      }
+    },
+    "/dashboard/category-totals": {
+      "get": {
+        "summary": "Category Summary",
+        "description": "Totals grouped by category and type",
+        "responses": { "200": { "description": "Success" } }
+      }
+    },
+    "/dashboard/recent": {
+      "get": {
+        "summary": "Recent Record",
+        "description": "Most recent records (by date and created_at).",
+        "responses": { "200": { "description": "Success" } }
+      }
+    },
+    "/dashboard/trends": {
+      "get": {
+        "summary": "Monthly or weekly trends",
+        "description": "Monthly or weekly aggregated income/expense",
+        "responses": { "200": { "description": "Success" } }
+      }
+    },
+    "/records": {
+      "get": {
+        "summary": "List Record",
+        "description": "List records (with filters & pagination)",
+        "parameters": [
+          { "name": "type", "in": "query", "schema": { "type": "string" } },
+          { "name": "category", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "Success" } }
+      },
+      "post": {
+        "summary": "Create Record",
+        "description": "Create a new financial record",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": { "type": "number" },
+                  "type": { "type": "string" },
+                  "category": { "type": "string" },
+                  "date": { "type": "string", "example": "YYYY-MM-DD" },
+                  "description": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Success" } }
+      }
+    },
+    "/records/{id}": {
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+      ],
+      "get": {
+        "summary": "Specific Record",
+        "responses": { "200": { "description": "Success" } }
+      },
+      "put": {
+        "summary": "Update Record",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": { "type": "number" },
+                  "type": { "type": "string" },
+                  "category": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Success" } }
+      },
+      "delete": {
+        "summary": "Delete Record",
+        "responses": { "200": { "description": "Success" } }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "security": [],
+        "responses": { "200": { "description": "Success" } }
+      }
+    },
+    "/users": {
+      "get": {
+        "summary": "All Users",
+        "responses": { "200": { "description": "Success" } }
+      }
+    },
+    "/users/{id}": {
+      "parameters": [
+        { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+      ],
+      "put": {
+        "summary": "Update User",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string" },
+                  "name": { "type": "string" },
+                  "role": { "type": "string" },
+                  "status": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Success" } }
+      },
+      "delete": {
+        "summary": "Delete User",
+        "responses": { "200": { "description": "Success" } }
+      }
+    }
+  }
+}

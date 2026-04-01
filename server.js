@@ -7,6 +7,8 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const userRoutes = require('./routes/userRoutes');
 const errorHandler = require('./middlewares/errorHandler');
 const helmet = require('helmet');
+const { swaggerUi, specs } = require('./swagger');
+const swaggerDocument = require('./finance-openapi.json');
 
 const requiredEnv = ['JWT_SECRET'];
 const missing = requiredEnv.filter(key => !process.env[key]);
@@ -28,6 +30,7 @@ app.use(cors());
 app.use(express.json());
 app.use('/api', limiter);
 app.use(helmet());
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

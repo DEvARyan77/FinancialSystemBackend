@@ -1,191 +1,181 @@
 # Finance Data Processing and Access Control Backend
 
-A robust backend system for a finance dashboard with role-based access control (viewer, analyst, admin). Built with Node.js, Express, SQLite, JWT authentication, and Joi validation. Provides CRUD operations for financial entries, dashboard summary APIs, user management, and full permission enforcement.
+A production-ready backend for a finance dashboard with role-based access control, financial record management, dashboard summaries, and caching. Built with Node.js, Express, PostgreSQL, Redis, and Nginx, and containerized with Docker.
 
 ## Features
-- User authentication: Register and login with JWT tokens.
-- Role-based access control: Viewer (read-only), Analyst (read + create/update own records), Admin (full control).
-- Financial record CRUD: Create, read, update, soft delete records with filtering (by date, type, category) and pagination.
-- Dashboard summaries: Total income/expense, net balance, category-wise totals, recent activity, and monthly/weekly trends.
-- Admin user management: List, update, delete users.
-- Soft delete: Records are not permanently deleted; 'deleted_at' column marks deletion, preserving data for audits.
-- Admin all-records view: Admin can view all records across users via '?all=true' query parameter.
-- Pagination metadata: Returns total count and pages alongside data.
-- Global error handler: Consistent error responses for validation, duplicate entries, and server errors.
-- Input validation: Using Joi to validate request bodies.
+
+- **User Authentication** – JWT-based registration and login with encrypted passwords (bcrypt).
+- **Role-Based Access Control (RBAC)** – 
+  - *Viewer*: Read-only access.
+  - *Analyst*: Read, create, and update own records.
+  - *Admin*: Full control, including soft-deleting records and managing users.
+- **Financial Record CRUD** – Create, read, update, and soft delete records with advanced filtering (date, type, category) and pagination.
+- **Dashboard Summaries** – Total income/expense, net balance, category totals, recent activity, and monthly/weekly trends.
+- **Caching Integration** – Redis caches dashboard summaries for 5 minutes. Automatically invalidates on record creation, update, or deletion.
+- **Reverse Proxy** – Nginx serves as a reverse proxy in front of the Node app (in Docker setup).
+- **Containerization** – Docker and Docker Compose configuration to run the whole stack (PostgreSQL, Redis, Node app, Nginx) seamlessly.
 
 ## Tech Stack
-- Node.js: Runtime environment
-- Express: Web framework
-- SQLite (better-sqlite3): Lightweight embedded database
-- JSON Web Tokens (JWT): Authentication
-- bcryptjs: Password hashing
-- Joi: Request validation
-- dotenv: Environment variables
+
+| Component     | Technology                            |
+|---------------|---------------------------------------|
+| Runtime       | Node.js + Express                     |
+| Database      | PostgreSQL (using pg)                 |
+| Cache         | Redis (using ioredis)                 |
+| Auth          | JWT + bcrypt                          |
+| Validation    | Joi                                   |
+| Proxy         | Nginx                                 |
+| Container     | Docker & Docker Compose               |
+| Testing       | Jest + Supertest                      |
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js (v14 or higher)
-- npm
 
-### Installation
+- Node.js v18+
+- PostgreSQL (or run via Docker)
+- Redis (or run via Docker)
+- Docker & Docker Compose (optional, for containerized setup)
+
+### Local Installation (Without Docker)
+
 1. Clone the repository:
-   git clone https://github.com/yourusername/finance-backend.git
+   ```bash
+   git clone [https://github.com/yourusername/finance-backend.git](https://github.com/yourusername/finance-backend.git)
    cd finance-backend
+   ```
 
 2. Install dependencies:
+   ```bash
    npm install
+   ```
 
-3. Create a .env file in the root directory:
+3. Create a `.env` file in the root directory:
+   ```env
    PORT=5000
-   JWT_SECRET=your_super_secret_key_change_this
+   JWT_SECRET=your_super_secret_jwt_key
+   DATABASE_URL=postgresql://user:password@localhost:5432/finance_db
+   TEST_DATABASE_URL=postgresql://user:password@localhost:5432/finance_test_db
+   REDIS_URL=redis://localhost:6379
+   ```
 
-4. Start the server:
+4. Start your local PostgreSQL and Redis servers.
+
+5. Start the development server:
+   ```bash
    npm run dev
+   ```
 
-The server will start on http://localhost:5000 and automatically create a finance.db SQLite database file in the project root. The deleted_at column for soft delete will be added automatically if it doesn't exist.
+### Docker Installation
+
+To run the entire stack (App, DB, Redis, Nginx) using Docker:
+
+```bash
+docker-compose up --build
+```
+
+The API will be accessible via Nginx at `http://localhost`.
 
 ---
 
 ## API Documentation
 
-All endpoints (except /api/auth/register and /api/auth/login) require a JWT token in the Authorization header:
-Authorization: Bearer <your_token>
+Interactive API documentation is available via Swagger UI. 
+Start the server and navigate to: **`http://localhost:5000/api-docs`**
 
-### Authentication
+A Postman collection is also included in the repository (`finance-backend.postman_collection.json`). Import it into Postman to easily test all endpoints.
 
-POST /api/auth/register
-Registers a new user.
-Request Body:
-{
-  "name": "John Doe",
-  "email": "john@example.com",
-  "password": "123456",
-  "role": "viewer" 
-}
+### Quick Reference
 
-POST /api/auth/login
-Logs in an existing user.
-Request Body:
-{
-  "email": "john@example.com",
-  "password": "123456"
-}
+*Note: All endpoints except `/auth/register` and `/auth/login` require an `Authorization: Bearer <token>` header.*
 
-### Financial Records
+#### Authentication
+- `POST /api/v1/auth/register` - Register a new user (roles: `viewer`, `analyst`, `admin`).
+- `POST /api/v1/auth/login` - Authenticate and receive a JWT.
 
-POST /api/records
-Create a new financial record.
-Roles allowed: analyst, admin
-Request Body:
-{
-  "amount": 1000,
-  "type": "income",
-  "category": "salary",
-  "date": "2026-04-01",
-  "description": "Monthly salary"
-}
+#### Financial Records
+- `POST /api/v1/records` - Create a record (Analyst/Admin).
+- `GET /api/v1/records` - List records. Supports queries: `?type=`, `?category=`, `?from=`, `?to=`, `?limit=`, `?offset=`, `?all=true` (Admin only).
+- `GET /api/v1/records/:id` - Get a single record.
+- `PUT /api/v1/records/:id` - Update a record (Analyst/Admin).
+- `DELETE /api/v1/records/:id` - Soft delete a record (Admin only).
 
-GET /api/records
-List records for the authenticated user (or all records for admin with ?all=true). Supports filtering and pagination.
-Roles allowed: all
-Query Parameters: type, category, from, to, limit, offset, all
+#### Dashboard (Cached via Redis)
+- `GET /api/v1/dashboard/summary` - Total income, expenses, and net balance.
+- `GET /api/v1/dashboard/category-totals` - Amounts grouped by category and type.
+- `GET /api/v1/dashboard/recent?limit=5` - Most recent transactions.
+- `GET /api/v1/dashboard/trends?period=month` - Income/expense aggregated over time.
 
-GET /api/records/:id
-Get a single record by ID.
-Roles allowed: all (users can only see their own records; admin can see any)
+#### User Management (Admin Only)
+- `GET /api/v1/users` - List all users.
+- `PUT /api/v1/users/:id` - Update user details/role.
+- `DELETE /api/v1/users/:id` - Permanently delete a user.
 
-PUT /api/records/:id
-Update a record. At least one field is required.
-Roles allowed: analyst, admin (analyst can only update their own records)
-
-DELETE /api/records/:id
-Soft delete a record (marks deleted_at timestamp). The record will no longer appear in queries.
-Roles allowed: admin only
-
-### Dashboard
-
-GET /api/dashboard/summary
-Returns total income, total expenses, and net balance for the authenticated user.
-Roles allowed: all
-
-GET /api/dashboard/category-totals
-Returns amounts grouped by category and type.
-Roles allowed: all
-
-GET /api/dashboard/recent?limit=5
-Returns the most recent records. Default limit is 5.
-Roles allowed: all
-
-GET /api/dashboard/trends?period=month
-Returns aggregated income/expense over time. period can be month or week.
-Roles allowed: all
-
-### User Management (Admin Only)
-
-GET /api/users
-List all users (without passwords).
-Roles allowed: admin
-
-PUT /api/users/:id
-Update a user. At least one field required.
-Roles allowed: admin
-
-DELETE /api/users/:id
-Permanently delete a user (hard delete).
-Roles allowed: admin
+#### System
+- `GET /health` - API Health check.
 
 ---
 
 ## Database Schema
 
-### users
-id (INTEGER) - Primary key
-name (TEXT) - User's name
-email (TEXT) - Unique email
-password (TEXT) - Hashed password
-role (TEXT) - viewer, analyst, admin
-status (TEXT) - active or inactive
-created_at (DATETIME) - Timestamp
+**`users` Table**
+| Column     | Type      | Description |
+|------------|-----------|-------------|
+| id         | SERIAL    | Primary key |
+| name       | TEXT      | User's name |
+| email      | TEXT      | Unique email |
+| password   | TEXT      | Hashed password |
+| role       | TEXT      | `viewer`, `analyst`, `admin` |
+| status     | TEXT      | `active`, `inactive` |
+| created_at | TIMESTAMP | Creation time |
 
-### financial_records
-id (INTEGER) - Primary key
-amount (REAL) - Positive amount
-type (TEXT) - income or expense
-category (TEXT) - Category name
-date (DATE) - Transaction date
-description (TEXT) - Optional note
-user_id (INTEGER) - Foreign key to users.id
-created_at (DATETIME) - Creation timestamp
-deleted_at (DATETIME) - Nullable, soft delete timestamp
-
----
-
-## Assumptions & Trade-offs
-- Authentication: JWT token expiry set to 7 days; no refresh tokens.
-- Role permissions: analyst can only update/delete their own records; admin can manage all records and users.
-- Soft delete: Applied only to financial records (not users). Deleted records are excluded from queries but remain in the database.
-- Admin all-records: Implemented via ?all=true query parameter.
-- Pagination: Uses limit/offset. For large datasets, cursor-based pagination would be more efficient, but this suffices for the scope.
-- Error handling: Global handler catches unhandled errors; validation errors return 400 with details.
-- Database: SQLite used for simplicity; in production, PostgreSQL would be better for concurrent access.
+**`financial_records` Table**
+| Column      | Type      | Description |
+|-------------|-----------|-------------|
+| id          | SERIAL    | Primary key |
+| amount      | REAL      | Positive amount |
+| type        | TEXT      | `income`, `expense` |
+| category    | TEXT      | Category name |
+| date        | DATE      | Transaction date |
+| description | TEXT      | Optional note |
+| user_id     | INTEGER   | Foreign key to `users.id` |
+| created_at  | TIMESTAMP | Creation time |
+| deleted_at  | TIMESTAMP | Soft delete timestamp (nullable) |
 
 ---
 
 ## Testing
-You can test the endpoints using Postman. A Postman collection is available in the repository root: Finance Backend.postman_collection.json.
-To run unit tests: npm test
+
+The project uses `Jest` and `Supertest` for integration testing.
+
+```bash
+# Ensure TEST_DATABASE_URL is set in your .env
+npm test
+```
+*Note: Tests wipe the database specified in `TEST_DATABASE_URL` before running. Do not use your production database credentials for testing.*
+
+## Caching Strategy
+
+- Dashboard endpoints are cached per user in Redis for 5 minutes.
+- **Cache Invalidation:** Creating, updating, or deleting a financial record automatically clears the specific user's cached dashboard data.
+- **Manual Clear:** `redis-cli DEL dashboard-summary:<user_id>`
 
 ## Deployment
-To deploy this backend to a service like Render or Heroku:
-- Ensure you have a Procfile (if needed).
-- Set environment variables (JWT_SECRET, PORT).
-- Use a production database (e.g., PostgreSQL).
+
+This application is ready to be deployed to platforms like Render, Railway, or Heroku.
+
+**Render Deployment Steps:**
+1. Create a PostgreSQL database and Redis instance on Render.
+2. Create a new Web Service connected to your GitHub repo.
+3. Set environment variables (`DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`).
+4. Build command: `npm install`
+5. Start command: `npm start`
+*(Note: Render provides its own reverse proxy, so the Nginx container is not strictly required for this platform).*
 
 ## License
 MIT
 
-## Author
-Dev Aryan
-This project was developed as part of a backend developer internship assignment to demonstrate API design, data modeling, business logic, and access control.
+## Postman Collection
+
+A Postman collection is available in the repository root: `Finance Backend.postman_collection.json`.  
+Import it into Postman, set the environment variable `baseUrl` (e.g., `http://localhost:5000/api/v1`), and use the requests to test the API.
