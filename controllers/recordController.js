@@ -1,4 +1,5 @@
 const FinancialRecord = require('../models/FinancialRecord');
+const { clearUserDashboardCache } = require('../utils/cache');
 
 exports.create = async (req, res) => {
   const { amount, type, category, date, description } = req.body;
@@ -9,6 +10,8 @@ exports.create = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+  await clearUserDashboardCache(req.user.id);
+  res.status(201).json(record);
 };
 
 exports.list = async (req, res) => {
@@ -59,6 +62,8 @@ exports.update = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+  await clearUserDashboardCache(req.user.id);
+  res.json(updated);
 };
 
 exports.deleteRecord = async (req, res) => {
@@ -73,4 +78,6 @@ exports.deleteRecord = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+  await clearUserDashboardCache(req.user.id);
+  res.status(204).send();
 };

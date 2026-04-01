@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const cache = require('../middlewares/cache');
 
 exports.summary = async (req, res) => {
   const userId = req.user.id;
