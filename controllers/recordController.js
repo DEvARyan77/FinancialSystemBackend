@@ -13,10 +13,21 @@ exports.create = (req, res) => {
 
 exports.list = (req, res) => {
   const { type, category, from, to, limit = 100, offset = 0 } = req.query;
-  const userId = req.user.id;
-  // For admin, maybe allow seeing all? We'll implement later.
+  let userId = req.user.id;
+  if (req.user.role === 'admin' && req.query.all === 'true') userId = null;
+  
   const records = FinancialRecord.findByUser(userId, { type, category, from, to, limit, offset });
-  res.json(records);
+  const total = FinancialRecord.countByUser(userId, { type, category, from, to });
+  
+  res.json({
+    data: records,
+    pagination: {
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      total,
+      pages: Math.ceil(total / limit)
+    }
+  });
 };
 
 exports.getById = (req, res) => {
