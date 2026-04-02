@@ -7,8 +7,8 @@
   },
   "servers": [
     {
-      "url": "http://localhost:5000/api/v1",
-      "description": "Local Development Server"
+      "url": "https://financialsystem-crxb.onrender.com/api/v1",
+      "description": "Production Server"
     }
   ],
   "components": {
