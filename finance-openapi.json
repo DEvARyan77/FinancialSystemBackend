@@ -46,7 +46,7 @@
             }
           }
         },
-        "responses": { "200": { "description": "Success" } }
+        "responses": { "201": { "description": "Success" } }
       }
     },
     "/auth/login": {
@@ -111,7 +111,7 @@
         "responses": { "200": { "description": "Success" } }
       },
       "post": {
-        "summary": "Create Record",
+        "summary": "Create Record (analyst/admin)",
         "description": "Create a new financial record",
         "requestBody": {
           "content": {
@@ -129,7 +129,7 @@
             }
           }
         },
-        "responses": { "200": { "description": "Success" } }
+        "responses": { "201": { "description": "Success" } }
       }
     },
     "/records/{id}": {
@@ -141,7 +141,7 @@
         "responses": { "200": { "description": "Success" } }
       },
       "put": {
-        "summary": "Update Record",
+        "summary": "Update Record (analyst/admin(own record))",
         "requestBody": {
           "content": {
             "application/json": {
@@ -159,8 +159,8 @@
         "responses": { "200": { "description": "Success" } }
       },
       "delete": {
-        "summary": "Delete Record",
-        "responses": { "200": { "description": "Success" } }
+        "summary": "Delete Record (admin)",
+        "responses": { "204": { "description": "Success" } }
       }
     },
     "/health": {
@@ -172,7 +172,7 @@
     },
     "/users": {
       "get": {
-        "summary": "All Users",
+        "summary": "All Users (admin)",
         "responses": { "200": { "description": "Success" } }
       }
     },
@@ -181,7 +181,7 @@
         { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
       ],
       "put": {
-        "summary": "Update User",
+        "summary": "Update User (admin)",
         "requestBody": {
           "content": {
             "application/json": {
@@ -200,8 +200,8 @@
         "responses": { "200": { "description": "Success" } }
       },
       "delete": {
-        "summary": "Delete User",
-        "responses": { "200": { "description": "Success" } }
+        "summary": "Delete User (admin)",
+        "responses": { "204": { "description": "Success" } }
       }
     }
   }
