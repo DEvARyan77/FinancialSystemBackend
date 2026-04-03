@@ -28,7 +28,6 @@ const limiter = rateLimit({
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use('/api', limiter);
 app.use(helmet());
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
