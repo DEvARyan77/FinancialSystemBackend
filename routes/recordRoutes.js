@@ -8,10 +8,9 @@ const router = express.Router();
 router.use(authenticate); // all routes require auth
 
 router.post('/', authorize('analyst', 'admin'), validate(schemas.createRecord), create);
-router.get('/', authorize('viewer', 'analyst', 'admin'), list);
 router.get('/:id', authorize('viewer', 'analyst', 'admin'), getById);
 router.put('/:id', authorize('analyst', 'admin'), validate(schemas.updateRecord), update);
 router.delete('/:id', authorize('admin'), deleteRecord);
-router.get('/', authenticate, authorize('viewer', 'analyst', 'admin'), validateQuery(recordListQuerySchema), list);
+router.get('/', authorize('viewer', 'analyst', 'admin'), validateQuery(recordListQuerySchema), list);
 
 module.exports = router;

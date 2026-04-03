@@ -16,13 +16,13 @@ exports.create = async (req, res) => {
 
 exports.list = async (req, res) => {
   const { type, category, from, to, limit = 100, offset = 0 } = req.query;
-  let userId = req.user.id;
-  if (req.user.role === 'admin' && req.query.all === 'true') {
-    userId = null;
-  }
+  console.log('Received query parameters:', { type, category, from, to, limit, offset }); // ← add this
+  let userId = null;
   try {
     const records = await FinancialRecord.findByUser(userId, { type, category, from, to, limit, offset });
-    const total = await FinancialRecord.countByUser(userId, { type, category, from, to });
+    const total = records.length; 
+    console.log(`Fetched ${records.length} records for user ${userId} with filters:`, { type, category, from, to, limit, offset }); // ← add this
+    console.log(`Total records matching filters: ${total}`); // ← add this
     res.json({
       data: records,
       pagination: {
@@ -41,7 +41,7 @@ exports.getById = async (req, res) => {
   try {
     const record = await FinancialRecord.findById(req.params.id);
     if (!record) return res.status(404).json({ error: 'Record not found' });
-    if (record.user_id !== req.user.id && req.user.role !== 'admin') {
+    if (record.user_id !== req.user.id && (req.user.role !== 'admin' || req.user.role !== 'analyst')) {
       return res.status(403).json({ error: 'Forbidden' });
     }
     res.json(record);
