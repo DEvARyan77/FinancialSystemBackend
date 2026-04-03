@@ -18,40 +18,47 @@ const FinancialRecord = {
     );
     return result.rows[0];
   },
-  findByUser: async (userId, filters = {}) => {
+  findByUser: async (userID, filters = {}) => {
     let query = `SELECT * FROM financial_records WHERE deleted_at IS NULL`;
     const values = [];
-    let idx = 1;
+    let idx = 1; 
+    const formatDbDate = (dateStr) => {
+      if (dateStr && typeof dateStr === 'string') {
+        const parts = dateStr.split(/[-/]/);
+        if (parts.length === 3 && parts[0].length <= 2 && parts[2].length === 4) {
+          return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+      }
+      return dateStr;
+    };
 
-    if (userId !== null) {
-      query += ` AND user_id = $${idx}`;
-      values.push(userId);
+    if (filters.type && filters.type !== '') {
+      query += ` AND type ILIKE $${idx}`; 
+      values.push(`%${filters.type}%`); 
       idx++;
     }
-
-    if (filters.type) {
-      query += ` AND type = $${idx}`;
-      values.push(filters.type);
+    if (filters.category && filters.category !== '') {
+      query += ` AND category ILIKE $${idx}`; 
+      // Add '%' wildcards to the front and back of the search term
+      values.push(`%${filters.category}%`); 
       idx++;
     }
-    if (filters.category) {
-      query += ` AND category = $${idx}`;
-      values.push(filters.category);
+    if (filters.from && filters.from !== '') {
+      query += ` AND date >= $${idx}`; 
+      values.push(formatDbDate(filters.from));
       idx++;
     }
-    if (filters.from) {
-      query += ` AND date >= $${idx}`;
-      values.push(filters.from);
+    if (filters.to && filters.to !== '') {
+      query += ` AND date <= $${idx}`; 
+      values.push(formatDbDate(filters.to));
       idx++;
     }
-    if (filters.to) {
-      query += ` AND date <= $${idx}`;
-      values.push(filters.to);
-      idx++;
-    }
-
-    query += ` ORDER BY date DESC, created_at DESC LIMIT $${idx} OFFSET $${idx+1}`;
+    
+    query += ` ORDER BY date DESC, created_at DESC LIMIT $${idx}::int OFFSET $${idx+1}::int`;
     values.push(parseInt(filters.limit || 100), parseInt(filters.offset || 0));
+
+    console.log('Constructed SQL query:', query); // ← add this
+    console.log('With values:', values); // ← add this
 
     const result = await pool.query(query, values);
     return result.rows;
@@ -59,36 +66,31 @@ const FinancialRecord = {
   countByUser: async (userId, filters = {}) => {
     let query = `SELECT COUNT(*) as total FROM financial_records WHERE deleted_at IS NULL`;
     const values = [];
-    let idx = 1;
+    let idx = 2;
 
-    if (userId !== null) {
-      query += ` AND user_id = $${idx}`;
-      values.push(userId);
-      idx++;
-    }
-
-    if (filters.type) {
-      query += ` AND type = $${idx}`;
+    if (filters.type && filters.type !== '') {
+      query += ` AND type = ${idx}`;
       values.push(filters.type);
       idx++;
     }
-    if (filters.category) {
-      query += ` AND category = $${idx}`;
+    if (filters.category && filters.category !== '') {
+      query += ` AND category = ${idx}`;
       values.push(filters.category);
       idx++;
     }
-    if (filters.from) {
-      query += ` AND date >= $${idx}`;
+    if (filters.from && filters.from !== '') {
+      query += ` AND date >= ${idx}`;
       values.push(filters.from);
       idx++;
     }
-    if (filters.to) {
-      query += ` AND date <= $${idx}`;
+    if (filters.to && filters.to !== '') {
+      query += ` AND date <= ${idx}`;
       values.push(filters.to);
       idx++;
     }
 
     const result = await pool.query(query, values);
+    console.log(query)
     return parseInt(result.rows[0].total);
   },
   update: async (id, data) => {
